@@ -32,11 +32,11 @@ function check_valid_resolve_ip($ip, $domain) {
         return array('label' => 'info', 'msg' => '');
     }
     if (filter_var($ip, FILTER_VALIDATE_IP) == false) {
-        return array('label' => 'danger', 'msg' => 'Invalid IP');
+        return array('label' => 'danger', 'msg' => 'IP INVALIDA');
     }
     $domain_local_ip = get_domain_ip_local_file($domain);
     if ($domain_local_ip['ip'] != $ip) {
-        return array('label' => 'danger', 'msg' => 'Different IP');
+        return array('label' => 'danger', 'msg' => 'IP DIFERENTE');
     }
     return array('label' => 'success', 'msg' => '');
 }
@@ -74,7 +74,7 @@ $hostname = gethostname();
         <div class="container-fluid">
             <div class="row">
                 <div class="col-md-12">
-                    <h1>cPanel DNS Check Account WHM Plugin</h1>
+                    <h1>ITFINDEN DNS Check Account WHM Plugin</h1>
                 </div>
             </div>
         </div>
@@ -84,11 +84,11 @@ $hostname = gethostname();
                     <table class="table">
                         <thead>
                             <tr>
-                                <td>User</td>
-                                <td>Reseller User</td>
-                                <td>Domain</td>
+                                <td>Usuario</td>
+                                <td>Usuario Reseller</td>
+                                <td>Dominio</td>
                                 <td>Local IP</td>
-                                <td></td>
+                                <td>Estado</td>
                             </tr>
                         </thead>
                         <tbody>
