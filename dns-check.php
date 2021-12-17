@@ -1,5 +1,25 @@
 <?php
 
+
+function array_to_table($matriz) 
+{   
+   echo "<table>";
+
+   // Table header
+        foreach ($matriz[0] as $clave=>$fila) {
+            echo "<th>".$clave."</th>";
+        }
+
+    // Table body
+       foreach ($matriz as $fila) {
+           echo "<tr>";
+           foreach ($fila as $elemento) {
+                 echo "<td>".$elemento."</td>";
+           } 
+          echo "</tr>";
+       } 
+   echo "</table>";}
+
 function resolve_domain($domain) {
     $dns = '8.8.8.8';  // Google Public DNS
     if (rand(0, 1) == 1) {
@@ -63,70 +83,114 @@ function get_domain_ip_local_file($domain) {
 
 $all_domains_local = open_file_per_line('/etc/localdomains');
 $hostname = gethostname();
+
+$action = $_GET['action'];
+
+
+$html_ini = "";
+$html_ini .= '<html>';
+$html_ini .= '<head>';
+$html_ini .= '<title>DNS Check Account</title>';
+$html_ini .= '<meta name="viewport" content="width=device-width, initial-scale=1">';
+$html_ini .= '<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootswatch/3.3.7/cosmo/bootstrap.min.css">';
+$html_ini .= '</head>';
+$html_ini .= '<body>';
+$html_ini .= '<div class="container-fluid">';
+$html_ini .= '<div class="row">';
+$html_ini .= '<div class="col-md-12">';
+$html_ini .= '<h1>ITFINDEN DNS Check Account WHM Plugin</h1>';
+$html_ini .= '</div>';
+$html_ini .= '</div>';
+$html_ini .= '</div>';
+$html_ini .= '<div class="container-fluid">';
+$html_ini .= '<div class="row">';
+$html_ini .= '<div class="col-md-12">';
+$html_ini .= '<table class="table">';
+$html_ini .= '<thead>';
+$html_ini .= '<tr>';
+$html_ini .= '<td>Usuario</td>';
+$html_ini .= '<td>Usuario Reseller</td>';
+$html_ini .= '<td>Dominio</td>';
+$html_ini .= '<td>Local IP</td>';
+$html_ini .= '<td>Estado</td>';
+$html_ini .= '</tr>';
+$html_ini .= '</thead>';
+$html_ini .= '<tbody>';
+
+
+$html_end .= '</tbody>';
+$html_end .= '</table>';
+$html_end .= '</div>';
+$html_end .= '</div>';
+$html_end .= '</div>';
+$html_end .= '</body>';
+$html_end .= '</html>';
+
+
+$domain_list_all = array();
+$domain_list_bad = array();
+
+foreach ($all_domains_local as $domain) {
+    $domain_local_acc = get_domain_ip_local_file($domain);
+    $resolve_ips = resolve_domain($domain);
+    $ips_ = '';
+    foreach ($resolve_ips as $ip) {
+        if ($domain == $hostname) {
+            $domain = '_SERVER_HOSTNAME_';
+        }
+        $check = check_valid_resolve_ip($ip, $domain);
+        $ips_ .= '<span class="label label-' . $check['label'] . '">' . $ip . '</span> ' . $check['msg'] . '<br><br>';
+    }
+    $ips = rtrim($ips_, '<br>');
+    $ip_result_html = $ips != '' ? $ips : '<span class="label label-danger">No Resuelve</span>';
+    if ($domain == '_SERVER_HOSTNAME_') {
+        $domain = $hostname;
+        $domain_local_acc['acc'] = 'root';
+    }
+    if (($check['label']=='success' )|| ($check['label']=='info' ) || ($domain_local_acc['acc']=='')) {
+        $domain_list_all[] = $domain_local_acc['acc']."|".$domain_local_acc['reseller']."|".$domain_local_acc['type']."|".$domain."|".$domain_local_acc['ip']."|".$check['label']."|".$ip_result_html;
+    } else {
+        $domain_list_bad[] = $domain_local_acc['acc']."|".$domain_local_acc['reseller']."|".$domain_local_acc['type']."|".$domain."|".$domain_local_acc['ip']."|".$check['label']."|".$ip_result_html;
+    }
+    
+     
+}
+
+
+
+    foreach($domain_list_bad as $key => $value) {
+        echo "$key is at $value \n";
+    }
+ 
+   /* echo "<pre>";
+    print_r($domain_list_all);
+    echo "</pre>";
+      echo "<pre>";
+    print_r($domain_list_bad);
+    echo "</pre>";*/
+    $html_recordset = "";
+
+    foreach ($domain_list_bad as $value) {
+            $pieces = explode("|", $value);
+           
+        $html_recordset .= "<tr>";
+        $html_recordset .= "<td> ". $pieces[0] ."</td>";
+        $html_recordset .= "<td> ". $pieces[1] ."</td>";
+        $html_recordset .= "<td>(". $pieces[2] .")". $pieces[3]."</td>";
+        $html_recordset .= "<td> ". $pieces[4] ."</td>";
+        $html_recordset .= "<td> ". $pieces[6] ."</td>";
+        $html_recordset .= "</tr>";
+
+        }
+
+$html_full = $html_ini . $html_recordset . $html_end;
+
+
+echo $html_full;
+
+
+
 ?>
-<html>
-    <head>
-        <title>DNS Check Account</title>
-        <meta name="viewport" content="width=device-width, initial-scale=1">
-        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootswatch/3.3.7/cosmo/bootstrap.min.css">
-    </head>
-    <body>
-        <div class="container-fluid">
-            <div class="row">
-                <div class="col-md-12">
-                    <h1>ITFINDEN DNS Check Account WHM Plugin</h1>
-                </div>
-            </div>
-        </div>
-        <div class="container-fluid">
-            <div class="row">
-                <div class="col-md-12">
-                    <table class="table">
-                        <thead>
-                            <tr>
-                                <td>Usuario</td>
-                                <td>Usuario Reseller</td>
-                                <td>Dominio</td>
-                                <td>Local IP</td>
-                                <td>Estado</td>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php
-                            $i = 1;
-                            foreach ($all_domains_local as $domain) {
-                                $domain_local_acc = get_domain_ip_local_file($domain);
-                                $resolve_ips = resolve_domain($domain);
-                                $ips_ = '';
-                                foreach ($resolve_ips as $ip) {
-                                    if ($domain == $hostname) {
-                                        $domain = '_SERVER_HOSTNAME_';
-                                    }
-                                    $check = check_valid_resolve_ip($ip, $domain);
-                                    $ips_ .= '<span class="label label-' . $check['label'] . '">' . $ip . '</span> ' . $check['msg'] . '<br><br>';
-                                }
-                                $ips = rtrim($ips_, '<br>');
-                                $ip_result_html = $ips != '' ? $ips : '<span class="label label-danger">Not Resolve</span>';
-                                if ($domain == '_SERVER_HOSTNAME_') {
-                                    $domain = $hostname;
-                                    $domain_local_acc['acc'] = 'root';
-                                }
-                                ?>
-                                <tr>
-                                    <td><?= $domain_local_acc['acc'] ?></td>
-                                    <td><?= $domain_local_acc['reseller'] ?></td>
-                                    <td>(<?= $domain_local_acc['type'] ?>) <?= $domain ?></td>
-                                    <td><?= $domain_local_acc['ip'] ?></td>
-                                    <td><?= $ip_result_html ?><br></td>
-                                </tr>
-                                <?php
-                                $i++;
-                            }
-                            ?>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-    </body>
-</html>
+                               
+
+
